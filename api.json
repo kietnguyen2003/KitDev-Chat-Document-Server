@@ -1,0 +1,526 @@
+{
+  "name": "KitDev Chat Document Server API",
+  "version": "1.0.0",
+  "generated_from_code": true,
+  "generated_at": "2026-07-11",
+  "default_response_envelope": {
+    "success": {
+      "code": "number",
+      "msg": "string",
+      "data": "any"
+    },
+    "error": {
+      "code": "number",
+      "msg": "string",
+      "data": null
+    }
+  },
+  "services": [
+    {
+      "name": "gateway",
+      "language": "Go",
+      "role": "JWT auth guard and reverse proxy",
+      "entrypoint": "gateway/cmd/main.go",
+      "notes": [
+        "Client-facing auth, category, document, and ask APIs currently go through this service.",
+        "Protected routes require Authorization: Bearer <access_token>."
+      ],
+      "routes": [
+        {
+          "path": "/api/auth/register",
+          "methods": [
+            "POST"
+          ],
+          "visibility": "public",
+          "proxied_to": "server:http://localhost:8081",
+          "auth_required": false
+        },
+        {
+          "path": "/api/auth/sign-in",
+          "methods": [
+            "POST"
+          ],
+          "visibility": "public",
+          "proxied_to": "server:http://localhost:8081",
+          "auth_required": false
+        },
+        {
+          "path": "/api/categories",
+          "methods": [
+            "POST",
+            "GET"
+          ],
+          "visibility": "public",
+          "proxied_to": "server:http://localhost:8081",
+          "auth_required": true
+        },
+        {
+          "path": "/api/documents",
+          "methods": [
+            "POST",
+            "DELETE"
+          ],
+          "visibility": "public",
+          "proxied_to": "server:http://localhost:8081",
+          "auth_required": true
+        },
+        {
+          "path": "/api/documents/:cateName",
+          "methods": [
+            "GET"
+          ],
+          "visibility": "public",
+          "proxied_to": "server:http://localhost:8081",
+          "auth_required": true
+        },
+        {
+          "path": "/api/documents/:id",
+          "methods": [
+            "PUT"
+          ],
+          "visibility": "public",
+          "proxied_to": "server:http://localhost:8081",
+          "auth_required": true
+        },
+        {
+          "path": "/api/ask/:language",
+          "methods": [
+            "POST"
+          ],
+          "visibility": "public",
+          "proxied_to": "rag_server:http://localhost:8000",
+          "auth_required": true
+        }
+      ]
+    },
+    {
+      "name": "server",
+      "language": "Go",
+      "role": "Auth, category, document metadata, storage quota, MinIO integration",
+      "entrypoint": "server/cmd/main.go",
+      "routes": [
+        {
+          "name": "Register",
+          "path": "/api/auth/register",
+          "method": "POST",
+          "visibility": "public",
+          "auth_required": false,
+          "request": {
+            "content_type": "application/json",
+            "body": {
+              "username": "string",
+              "password": "string",
+              "fullname": "string"
+            }
+          },
+          "responses": {
+            "200": {
+              "code": 200,
+              "msg": "Register success",
+              "data": {
+                "user": {
+                  "fullname": "string",
+                  "role": "string"
+                },
+                "token": {
+                  "access_token": "string",
+                  "refresh_token": "string",
+                  "expire_in": "number"
+                },
+                "storage": {
+                  "current_size": "number",
+                  "limit_size": "number"
+                }
+              }
+            },
+            "400": {
+              "code": 400,
+              "msg": "Can not bind request | User aldready exist | Create user fail | validation error",
+              "data": null
+            }
+          }
+        },
+        {
+          "name": "Sign In",
+          "path": "/api/auth/sign-in",
+          "method": "POST",
+          "visibility": "public",
+          "auth_required": false,
+          "request": {
+            "content_type": "application/json",
+            "body": {
+              "username": "string",
+              "password": "string"
+            }
+          },
+          "responses": {
+            "200": {
+              "code": 200,
+              "msg": "Register success",
+              "data": {
+                "user": {
+                  "fullname": "string",
+                  "role": "string"
+                },
+                "token": {
+                  "access_token": "string",
+                  "refresh_token": "string",
+                  "expire_in": "number"
+                },
+                "storage": {
+                  "current_size": "number",
+                  "limit_size": "number"
+                }
+              }
+            },
+            "400": {
+              "code": 400,
+              "msg": "Can not bind request | Wrong Username | Wrong Password | validation error",
+              "data": null
+            }
+          }
+        },
+        {
+          "name": "Create Category",
+          "path": "/api/categories",
+          "method": "POST",
+          "visibility": "public",
+          "auth_required": true,
+          "request": {
+            "content_type": "application/json",
+            "headers": {
+              "Authorization": "Bearer <access_token>"
+            },
+            "body": {
+              "name": "string"
+            }
+          },
+          "responses": {
+            "201": {
+              "code": 201,
+              "msg": "Create Category success",
+              "data": {
+                "id": "number",
+                "user_id": "number",
+                "name": "string",
+                "created_at": "datetime",
+                "updated_at": "datetime"
+              }
+            },
+            "400": {
+              "code": 400,
+              "msg": "Can not bind request | User not found | Ban da co folder nay roi | validation error",
+              "data": null
+            }
+          }
+        },
+        {
+          "name": "Get Category List",
+          "path": "/api/categories",
+          "method": "GET",
+          "visibility": "public",
+          "auth_required": true,
+          "request": {
+            "headers": {
+              "Authorization": "Bearer <access_token>"
+            }
+          },
+          "responses": {
+            "201": {
+              "code": 201,
+              "msg": "Get list Category success",
+              "data": [
+                {
+                  "id": "number",
+                  "user_id": "number",
+                  "name": "string",
+                  "created_at": "datetime",
+                  "updated_at": "datetime"
+                }
+              ]
+            },
+            "400": {
+              "code": 400,
+              "msg": "User not found | validation error",
+              "data": null
+            }
+          }
+        },
+        {
+          "name": "Upload Document",
+          "path": "/api/documents",
+          "method": "POST",
+          "visibility": "public",
+          "auth_required": true,
+          "request": {
+            "content_type": "multipart/form-data",
+            "headers": {
+              "Authorization": "Bearer <access_token>"
+            },
+            "form_data": {
+              "file": "file",
+              "cateName": "string"
+            }
+          },
+          "responses": {
+            "202": {
+              "code": 202,
+              "msg": "Uploadfile Success",
+              "data": {
+                "object_name": "string"
+              }
+            },
+            "400": {
+              "code": 400,
+              "msg": "User dont exist | Cate doesnt exist | storage error | upload error | validation error",
+              "data": null
+            },
+            "502": {
+              "code": 502,
+              "msg": "multipart parse error",
+              "data": null
+            }
+          },
+          "side_effects": [
+            "Stores file in MinIO bucket documents.",
+            "Creates document record with status indexing.",
+            "Triggers async indexing request to rag_server."
+          ]
+        },
+        {
+          "name": "Delete Document",
+          "path": "/api/documents",
+          "method": "DELETE",
+          "visibility": "public",
+          "auth_required": true,
+          "request": {
+            "content_type": "application/json",
+            "headers": {
+              "Authorization": "Bearer <access_token>"
+            },
+            "body": {
+              "object_name": "string",
+              "size": "number"
+            }
+          },
+          "responses": {
+            "201": {
+              "code": 201,
+              "msg": "Delete document success",
+              "data": null
+            },
+            "400": {
+              "code": 400,
+              "msg": "Cant not bind request | User doesnt exist | Delete document fail | delete/vector cleanup error",
+              "data": null
+            }
+          }
+        },
+        {
+          "name": "Update Document Status",
+          "path": "/api/documents/:id",
+          "method": "PUT",
+          "visibility": "internal",
+          "auth_required": false,
+          "request": {
+            "content_type": "application/json",
+            "headers": {
+              "KIT-DEV-USERNAME": "string"
+            },
+            "path_params": {
+              "id": "number"
+            },
+            "body": {
+              "status": "string"
+            }
+          },
+          "responses": {
+            "201": {
+              "code": 201,
+              "msg": "Upadte Status success",
+              "data": null
+            },
+            "400": {
+              "code": 400,
+              "msg": "Cant not bind request | User not found | Document not found | validation error",
+              "data": null
+            }
+          },
+          "notes": [
+            "Currently used by rag_server callback after indexing.",
+            "Example statuses observed in code: indexing, indexed, failed."
+          ]
+        },
+        {
+          "name": "Get Document List By Category",
+          "path": "/api/documents/:cateName",
+          "method": "GET",
+          "visibility": "public",
+          "auth_required": true,
+          "request": {
+            "headers": {
+              "Authorization": "Bearer <access_token>"
+            },
+            "path_params": {
+              "cateName": "string"
+            }
+          },
+          "responses": {
+            "202": {
+              "code": 202,
+              "msg": "Get Document List sucess",
+              "data": [
+                {
+                  "document_id": "number",
+                  "user_id": "number",
+                  "document_name": "string",
+                  "object_name": "string",
+                  "size": "number",
+                  "status": "string"
+                }
+              ]
+            },
+            "502": {
+              "code": 502,
+              "msg": "User not found | Category not found in this user | repository error",
+              "data": null
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "rag_server",
+      "language": "Python / FastAPI",
+      "role": "Document indexing and RAG question answering",
+      "entrypoint": "rag_server/app.py",
+      "routes": [
+        {
+          "name": "Index Document",
+          "path": "/api/documents",
+          "method": "POST",
+          "visibility": "internal",
+          "auth_required": false,
+          "request": {
+            "content_type": "application/json",
+            "body": {
+              "document_id": "number",
+              "bucket": "string",
+              "object": "string",
+              "user_id": "number",
+              "category": "string",
+              "type": "string"
+            }
+          },
+          "responses": {
+            "200": {
+              "status": true
+            }
+          },
+          "side_effects": [
+            "Downloads PDF from MinIO.",
+            "Parses and chunks document.",
+            "Stores embeddings into Chroma.",
+            "Calls back server /api/documents/:id with status indexed or failed."
+          ]
+        },
+        {
+          "name": "Index Document Alias",
+          "path": "/api/documents/index",
+          "method": "POST",
+          "visibility": "internal",
+          "auth_required": false,
+          "request": {
+            "content_type": "application/json",
+            "body": {
+              "document_id": "number",
+              "bucket": "string",
+              "object": "string",
+              "user_id": "number",
+              "category": "string",
+              "type": "string"
+            }
+          },
+          "responses": {
+            "200": {
+              "status": true
+            }
+          }
+        },
+        {
+          "name": "Delete Document From Vector Store",
+          "path": "/api/documents",
+          "method": "DELETE",
+          "visibility": "internal",
+          "auth_required": false,
+          "request": {
+            "content_type": "application/json",
+            "body": {
+              "document_id": "number"
+            }
+          },
+          "responses": {
+            "200": {
+              "status": true
+            }
+          }
+        },
+        {
+          "name": "Ask Model Stream",
+          "path": "/api/ask/{language}",
+          "method": "POST",
+          "visibility": "internal",
+          "auth_required": false,
+          "request": {
+            "content_type": "application/json",
+            "path_params": {
+              "language": "vi | en"
+            },
+            "body": {
+              "msg": "string",
+              "document_id": "number",
+              "user_id": "number",
+              "category": "string"
+            }
+          },
+          "responses": {
+            "200": {
+              "content_type": "text/event-stream",
+              "events": [
+                {
+                  "event": "token",
+                  "data": {
+                    "text": "string"
+                  }
+                },
+                {
+                  "event": "sources",
+                  "data": {
+                    "citations": [
+                      {
+                        "citation_id": "number",
+                        "content": "string",
+                        "source": "string",
+                        "page": "number|null",
+                        "document_id": "number",
+                        "category": "string"
+                      }
+                    ]
+                  }
+                },
+                {
+                  "event": "done",
+                  "data": "[DONE]"
+                }
+              ]
+            }
+          },
+          "notes": [
+            "Retrieval filter currently uses category and user_id; document_id is present in the request body but is not applied in the current query filter.",
+            "Answer is streamed from Ollama via SSE."
+          ]
+        }
+      ]
+    }
+  ]
+}
