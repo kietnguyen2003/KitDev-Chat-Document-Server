@@ -1,0 +1,5 @@
+client -> upload document -> gateway -> go service -> upload vaof minio -> upload vao database -> gui den python service -> load pdf from mini -> indexing
+                                                                                    |                                                                |
+                                                                                    v                                                                |
+                                                                          response ve client                                                         v
+                                                                          status indexing                                                      update status
