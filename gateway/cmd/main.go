@@ -10,11 +10,17 @@ import (
 func main() {
 	config := gateway.LoadConfig()
 	r := gin.New()
+	rateLimiter := gateway.NewRateLimiter(
+		config.RateLimitRequests,
+		config.RateLimitWindow,
+		config.RateLimitCleanupWindow,
+	)
 
 	gateway.CorsGuard(r)
+	r.Use(rateLimiter.Middleware())
 
-	authProxy := gateway.ReverseProxy(config.ServerURL)
-	ragProxy := gateway.ReverseProxy(config.RagURL)
+	authProxy := gateway.NewLoadBalancedProxy(config.ServerURLs).Handler()
+	ragProxy := gateway.NewLoadBalancedProxy(config.RagURLs).Handler()
 
 	auth := r.Group("/api/auth")
 	{
